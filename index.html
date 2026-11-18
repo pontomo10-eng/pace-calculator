@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>マラソン ペース計算 | サブ4を目指す</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, "Hiragino Kaku Gothic ProN", sans-serif; margin: 0; padding: 16px; background: #f7f5f0; color: #222; }
+  main { max-width: 560px; margin: 0 auto; }
+  h1 { font-size: 1.4rem; margin: 8px 0 4px; }
+  p.lead { color: #555; margin: 0 0 16px; font-size: 0.95rem; }
+  .card { background: #fff; border-radius: 12px; padding: 16px; box-shadow: 0 1px 4px rgba(0,0,0,.08); margin-bottom: 16px; }
+  label { display: block; font-size: 0.9rem; margin-bottom: 6px; color: #444; }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  input[type="number"] { width: 76px; padding: 10px; font-size: 1.1rem; border: 1px solid #ccc; border-radius: 8px; text-align: center; }
+  .presets { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+  button { padding: 10px 14px; font-size: 1rem; border: 0; border-radius: 8px; background: #e8e2d5; color: #222; cursor: pointer; }
+  button.primary { background: #2f6f4e; color: #fff; width: 100%; margin-top: 12px; font-size: 1.1rem; padding: 12px; }
+  .pace { font-size: 2rem; font-weight: 700; text-align: center; margin: 4px 0; }
+  .pace small { font-size: 1rem; font-weight: 400; color: #555; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
+  th, td { padding: 7px 6px; border-bottom: 1px solid #eee; text-align: right; }
+  th { color: #555; font-weight: 600; }
+  td:first-child, th:first-child { text-align: left; }
+  tr.goal td { font-weight: 700; background: #f2f7f3; }
+  footer { color: #888; font-size: 0.8rem; text-align: center; margin-top: 8px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>🏃 マラソン ペース計算</h1>
+  <p class="lead">目標タイムを入れると、1kmあたりのペースと通過タイムの目安を計算します。距離はフルマラソン 42.195km 固定です。</p>
+
+  <div class="card">
+    <label for="h">目標タイム</label>
+    <div class="row">
+      <input type="number" id="h" value="3" min="0" max="9"> 時間
+      <input type="number" id="m" value="59" min="0" max="59"> 分
+      <input type="number" id="s" value="59" min="0" max="59"> 秒
+    </div>
+    <div class="presets">
+      <button type="button" data-t="3:59:59">サブ4（3:59:59）</button>
+      <button type="button" data-t="4:30:00">4時間30分</button>
+      <button type="button" data-t="4:35:00">現在のベスト 4:35</button>
+    </div>
+    <button type="button" class="primary" id="calc">計算する</button>
+  </div>
+
+  <div class="card" id="result" hidden>
+    <div class="pace"><span id="pace">-</span> <small>/km</small></div>
+    <table>
+      <thead><tr><th>地点</th><th>通過タイム</th></tr></thead>
+      <tbody id="splits"></tbody>
+    </table>
+  </div>
+
+  <footer>はじめての Cloudflare Pages 公開テストページ</footer>
+</main>
+<script>
+  const DIST = 42.195;
+  const marks = [5, 10, 15, 20, 21.0975, 25, 30, 35, 40, 42.195];
+  const fmt = (sec) => {
+    sec = Math.round(sec);
+    const h = Math.floor(sec / 3600), m = Math.floor(sec % 3600 / 60), s = sec % 60;
+    return (h > 0 ? h + ":" : "") + String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
+  };
+  function calc() {
+    const total = (+document.getElementById("h").value || 0) * 3600
+                + (+document.getElementById("m").value || 0) * 60
+                + (+document.getElementById("s").value || 0);
+    if (total <= 0) return;
+    const pace = total / DIST;
+    const pm = Math.floor(pace / 60), ps = Math.round(pace % 60);
+    document.getElementById("pace").textContent = pm + ":" + String(ps).padStart(2, "0");
+    document.getElementById("splits").innerHTML = marks.map(d => {
+      const name = d === 21.0975 ? "ハーフ" : d === 42.195 ? "ゴール" : d + "km";
+      const cls = (d === 21.0975 || d === 42.195) ? ' class="goal"' : "";
+      return "<tr" + cls + "><td>" + name + "</td><td>" + fmt(total * d / DIST) + "</td></tr>";
+    }).join("");
+    document.getElementById("result").hidden = false;
+  }
+  document.getElementById("calc").addEventListener("click", calc);
+  document.querySelectorAll(".presets button").forEach(b => {
+    b.addEventListener("click", () => {
+      const [h, m, s] = b.dataset.t.split(":").map(Number);
+      document.getElementById("h").value = h;
+      document.getElementById("m").value = m;
+      document.getElementById("s").value = s;
+      calc();
+    });
+  });
+  calc();
+</script>
+</body>
+</html>
